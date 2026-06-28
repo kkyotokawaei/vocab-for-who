@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VocabMind — ระบบทบทวนอัจฉริยะ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f11;
+    --surface: #18181c;
+    --surface-2: #222228;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.15);
+    --text: #f0eff4;
+    --text-2: #9997a8;
+    --text-3: #5c5a6e;
+    --accent: #7c6fff;
+    --accent-light: #a89fff;
+    --accent-bg: rgba(124,111,255,0.12);
+    --accent-border: rgba(124,111,255,0.35);
+    --green: #3ecf8e;
+    --green-bg: rgba(62,207,142,0.12);
+    --red: #f26d6d;
+    --red-bg: rgba(242,109,109,0.12);
+    --amber: #f0a03a;
+    --amber-bg: rgba(240,160,58,0.12);
+    --radius: 10px;
+    --font-en: 'Space Grotesk', sans-serif;
+    --font-th: 'Sarabun', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-th);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* LAYOUT */
+  .shell { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  .logo {
+    font-family: var(--font-en);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent-light);
+    padding: 0.25rem 0.75rem 1.25rem;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; flex-shrink: 0; }
+
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius);
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    font-family: var(--font-th);
+    font-size: 14px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-btn:hover { background: var(--surface-2); color: var(--text); }
+  .nav-btn.active { background: var(--accent-bg); color: var(--accent-light); border: 1px solid var(--accent-border); }
+  .nav-icon { font-size: 16px; flex-shrink: 0; }
+
+  .nav-divider { height: 1px; background: var(--border); margin: 8px 4px; }
+  .nav-label { font-size: 11px; color: var(--text-3); padding: 6px 12px 4px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  .word-count-badge { margin-left: auto; background: var(--surface-2); color: var(--text-3); font-size: 11px; padding: 2px 7px; border-radius: 20px; }
+  .nav-btn.active .word-count-badge { background: var(--accent-bg); color: var(--accent-light); }
+
+  /* MAIN */
+  .main { flex: 1; min-width: 0; padding: 2rem 2rem 4rem; max-width: 780px; }
+
+  .page-title {
+    font-family: var(--font-en);
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  .page-sub { font-size: 14px; color: var(--text-2); margin-bottom: 1.75rem; }
+
+  /* CARDS & FORMS */
+  .add-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-group { margin-bottom: 12px; }
+  .form-group label { display: block; font-size: 13px; color: var(--text-2); margin-bottom: 6px; }
+
+  .add-input {
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .add-input.en { font-family: var(--font-en); }
+  .add-input.th { font-family: var(--font-th); }
+  .add-input::placeholder { color: var(--text-3); }
+  .add-input:focus { border-color: var(--accent); }
+
+  select.add-input { appearance: none; cursor: pointer; }
+
+  .add-submit {
+    display: block;
+    width: 100%;
+    margin-top: 18px;
+    padding: 12px 20px;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius);
+    color: #fff;
+    font-family: var(--font-th);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .add-submit:hover { opacity: 0.85; }
+
+  .secondary-btn {
+    display: inline-block;
+    padding: 10px 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-2);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: var(--font-th);
+    transition: all 0.15s;
+  }
+  .secondary-btn:hover { border-color: var(--text-3); color: var(--text); }
+
+  .file-input-wrapper {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+  }
+  .file-input-wrapper input[type=file] {
+    position: absolute;
+    left: 0; top: 0; opacity: 0;
+    font-size: 100px; cursor: pointer;
+  }
+
+  .import-box {
+    border: 2px dashed var(--border-strong);
+    border-radius: 14px;
+    padding: 1.5rem;
+    text-align: center;
+    background: rgba(255,255,255,0.01);
+    margin-bottom: 1.5rem;
+  }
+  .import-instructions { font-size: 13px; color: var(--text-3); margin-top: 8px; }
+
+  .loading-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); margin-top: 12px; justify-content: center; }
+
+  /* AUDIO BUTTON */
+  .audio-btn {
+    background: none;
+    border: none;
+    color: var(--accent-light);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.1s;
+    line-height: 1;
+  }
+  .audio-btn:hover { background: var(--surface-2); }
+
+  /* WORD CARDS */
+  .word-grid { display: flex; flex-direction: column; gap: 10px; }
+
+  .wcard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    transition: border-color 0.15s;
+    animation: fadeIn 0.25s ease;
+  }
+  .wcard:hover { border-color: var(--border-strong); }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .wcard-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .wcard-en { font-family: var(--font-en); font-size: 19px; font-weight: 600; color: var(--text); }
+  .wcard-pos { font-size: 11px; background: var(--accent-bg); color: var(--accent-light); border: 1px solid var(--accent-border); padding: 2px 9px; border-radius: 20px; margin-left: 8px; font-family: var(--font-en); flex-shrink: 0; }
+  .wcard-th { font-size: 16px; color: var(--text-2); margin-bottom: 8px; }
+  .wcard-ex { font-size: 13px; color: var(--text-3); border-left: 2px solid var(--accent); padding-left: 10px; font-family: var(--font-en); font-style: italic; }
+  .wcard-ex-th { font-style: normal; font-family: var(--font-th); color: var(--text-3); margin-top: 2px; }
+
+  .del-btn { background: none; border: none; cursor: pointer; color: var(--text-3); font-size: 16px; padding: 2px 4px; border-radius: 6px; transition: color 0.15s, background 0.15s; flex-shrink: 0; line-height: 1; }
+  .del-btn:hover { color: var(--red); background: var(--red-bg); }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 4rem 1rem; color: var(--text-3); }
+  .empty-icon { font-size: 40px; margin-bottom: 10px; }
+  .empty-title { font-size: 16px; color: var(--text-2); margin-bottom: 6px; }
+  .empty-body { font-size: 14px; }
+
+  /* GAMES COMMON */
+  .game-wrap { max-width: 560px; }
+  .progress-bar-outer { height: 4px; background: var(--surface-2); border-radius: 2px; margin-bottom: 1.5rem; overflow: hidden; }
+  .progress-bar-inner { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
+  .game-meta { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-2); margin-bottom: 1.25rem; }
+  .game-score { font-size: 13px; }
+  .game-score span { font-weight: 600; color: var(--text); }
+
+  .game-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem 1.75rem;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .game-label { font-size: 12px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; font-family: var(--font-en); }
+  .game-word { font-family: var(--font-en); font-size: 32px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; margin-bottom: 6px; }
+  .game-pos-badge { display: inline-block; font-family: var(--font-en); font-size: 12px; background: var(--surface-2); color: var(--text-3); padding: 2px 10px; border-radius: 20px; margin-bottom: 16px; }
+  .game-example { font-family: var(--font-en); font-size: 14px; color: var(--text-2); font-style: italic; margin-bottom: 6px; }
+
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+  .choice-btn {
+    padding: 12px 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-2);
+    font-family: var(--font-th);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .choice-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--text); background: var(--accent-bg); }
+  .choice-btn.correct { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .choice-btn.wrong { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .choice-btn:disabled { cursor: default; }
+
+  .fill-input-game {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-en);
+    font-size: 18px;
+    text-align: center;
+    outline: none;
+    margin-bottom: 10px;
+    transition: border-color 0.15s;
+    letter-spacing: 1px;
+  }
+  .fill-input-game:focus { border-color: var(--accent); }
+  .fill-input-game.correct { border-color: var(--green); color: var(--green); }
+  .fill-input-game.wrong { border-color: var(--red); color: var(--red); }
+
+  .hint-pill { display: inline-block; font-family: var(--font-en); font-size: 13px; background: var(--surface-2); color: var(--text-2); padding: 4px 14px; border-radius: 20px; margin-bottom: 14px; }
+
+  .feedback { font-size: 14px; font-weight: 500; padding: 8px 14px; border-radius: var(--radius); margin-bottom: 12px; }
+  .feedback.ok { background: var(--green-bg); color: var(--green); }
+  .feedback.no { background: var(--red-bg); color: var(--red); }
+
+  .next-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius);
+    color: #fff;
+    font-family: var(--font-th);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .next-btn:hover { opacity: 0.85; }
+
+  /* FLASHCARD */
+  .flashcard-wrap { perspective: 1000px; width: 100%; max-width: 480px; height: 260px; margin: 0 auto 1.5rem; cursor: pointer; }
+  .flashcard-inner { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.4s ease; }
+  .flashcard-wrap.flipped .flashcard-inner { transform: rotateY(180deg); }
+  .fc-side {
+    position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    text-align: center;
+  }
+  .fc-back { transform: rotateY(180deg); background: var(--accent-bg); border-color: var(--accent-border); }
+  .fc-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; font-family: var(--font-en); }
+  .fc-word { font-family: var(--font-en); font-size: 30px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .fc-pos { font-family: var(--font-en); font-size: 12px; color: var(--text-3); }
+  .fc-th { font-size: 22px; color: var(--accent-light); font-weight: 600; margin-bottom: 6px; }
+  .fc-ex { font-family: var(--font-en); font-size: 12px; color: var(--text-2); font-style: italic; }
+  .fc-tap { font-size: 11px; color: var(--text-3); margin-top: 12px; background: rgba(0,0,0,0.2); padding: 2px 8px; border-radius: 10px; }
+
+  /* SPACED REPETITION GRID BUTTONS */
+  .srs-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; width: 100%; margin-top: 4px; }
+  .srs-btn {
+    padding: 11px 6px;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font-th);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    color: #fff;
+    transition: opacity 0.15s;
+    text-align: center;
+  }
+  .srs-btn:hover { opacity: 0.85; }
+  .srs-red { background: var(--red); }
+  .srs-amber { background: var(--amber); }
+  .srs-green { background: var(--green); }
+
+  /* RESULT */
+  .result-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2.5rem; text-align: center; }
+  .result-icon { font-size: 48px; margin-bottom: 12px; }
+  .result-title { font-family: var(--font-en); font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .result-score { font-family: var(--font-en); font-size: 48px; font-weight: 700; color: var(--accent-light); margin-bottom: 4px; }
+  .result-sub { font-size: 14px; color: var(--text-2); margin-bottom: 1.5rem; }
+
+  /* RESPONSIVE */
+  @media (max-width: 680px) {
+    .sidebar { display: none; }
+    .main { padding: 1.25rem 1rem 3rem; }
+    .choices { grid-template-columns: 1fr; }
+    .game-word { font-size: 24px; }
+    .srs-row { grid-template-columns: 1fr; }
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="sidebar" aria-label="เมนูหลัก">
+    <div class="logo"><div class="logo-dot"></div>VocabMind</div>
+    <button class="nav-btn active" onclick="showTab('add')" id="nav-add">
+      <span class="nav-icon">✦</span> เพิ่มคำศัพท์ / นำเข้า
+    </button>
+    <button class="nav-btn" onclick="showTab('list')" id="nav-list">
+      <span class="nav-icon">◈</span> คำศัพท์ทั้งหมด
+      <span class="word-count-badge" id="count-badge">0</span>
+    </button>
+    <div class="nav-divider"></div>
+    <div class="nav-label">สมาร์ทรีวิว (Spaced Repetition)</div>
+    <button class="nav-btn" onclick="showTab('flash')" id="nav-flash">
+      <span class="nav-icon">⟁</span> แฟลชการ์ดอัจฉริยะ
+    </button>
+    <div class="nav-divider"></div>
+    <div class="nav-label">เกมทบทวนทั่วไป</div>
+    <button class="nav-btn" onclick="showTab('fill')" id="nav-fill">
+      <span class="nav-icon">⌨</span> เติมคำ
+    </button>
+    <button class="nav-btn" onclick="showTab('choice')" id="nav-choice">
+      <span class="nav-icon">⊞</span> เลือกตอบ
+    </button>
+  </nav>
+
+  <main class="main">
+
+    <div id="tab-add" class="section active">
+      <h1 class="page-title">เพิ่มคำศัพท์</h1>
+      <p class="page-sub">บันทึกคำศัพท์แบบทีละคำ หรือนำเข้าไฟล์จำนวนมากจาก Excel</p>
+      
+      <div class="import-box">
+        <div class="file-input-wrapper">
+          <button class="secondary-btn">📂 เลือกไฟล์ Excel (.CSV) เพื่อนำเข้า</button>
+          <input type="file" id="csv-file" accept=".csv" onchange="importCSV(this)" />
+        </div>
+        <p class="import-instructions">
+          * รูปแบบลำดับช่องใน Excel: <strong>ช่อง A: คำศัพท์อังกฤษ</strong> | <strong>ช่อง B: ความหมายไทย</strong> | <strong>ช่อง C: ประโยคตัวอย่าง</strong>
+        </p>
+      </div>
+
+      <div class="add-card">
+        <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--accent-light);">พิมพ์เพิ่มทีละคำ:</h3>
+        <div class="form-group">
+          <label for="word-en">คำศัพท์ภาษาอังกฤษ *</label>
+          <input class="add-input en" id="word-en" type="text" placeholder="เช่น resilient" maxlength="60" />
+        </div>
+
+        <div class="form-group">
+          <label for="word-th">คำแปลภาษาไทย *</label>
+          <input class="add-input th" id="word-th" type="text" placeholder="เช่น ยืดหยุ่น" maxlength="100" />
+        </div>
+
+        <div class="form-group">
+          <label for="word-pos">ชนิดของคำ (Part of Speech)</label>
+          <select class="add-input en" id="word-pos">
+            <option value="noun">noun (คำนาม)</option>
+            <option value="verb">verb (คำกริยา)</option>
+            <option value="adjective" selected>adjective (คำคุณศัพท์)</option>
+            <option value="adverb">adverb (คำกริยาวิเศษณ์)</option>
+            <option value="pronoun">pronoun (คำสรรพนาม)</option>
+            <option value="preposition">preposition (คำบุพบท)</option>
+            <option value="conjunction">conjunction (คำสันธาน)</option>
+            <option value="interjection">interjection (คำอุทาน)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="word-ex">ประโยคตัวอย่างภาษาอังกฤษ (ไม่บังคับ)</label>
+          <input class="add-input en" id="word-ex" type="text" placeholder="เช่น She is a resilient person." maxlength="200" />
+        </div>
+
+        <div class="form-group">
+          <label for="word-ex-th">คำแปลประโยคตัวอย่าง (ไม่บังคับ)</label>
+          <input class="add-input th" id="word-ex-th" type="text" placeholder="เช่น เธอเป็นคนที่มีความยืดหยุ่นปรับตัวเก่ง" maxlength="200" />
+        </div>
+
+        <button class="add-submit" id="add-btn" onclick="addWordManual()">บันทึกคำศัพท์</button>
+        
+        <div id="loading-row" class="loading-row" style="display:none">
+          <span id="loading-text" style="color: var(--green)">✓ บันทึกคำศัพท์สำเร็จ!</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-list" class="section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <h1 class="page-title">คำศัพท์ทั้งหมด</h1>
+        <button class="secondary-btn" onclick="exportCSV()" style="font-size: 12px; padding: 6px 12px;">📥 สำรองข้อมูลออกเป็นไฟล์</button>
+      </div>
+      <p class="page-sub" id="list-sub">กำลังโหลด...</p>
+      <div class="word-grid" id="word-list"></div>
+    </div>
+
+    <div id="tab-flash" class="section">
+      <h1 class="page-title">แฟลชการ์ดอัจฉริยะ (Spaced Repetition)</h1>
+      <p class="page-sub">คำที่จำได้จะถูกเว้นระยะทบทวนอีก 2 วัน ส่วนคำที่ยังจำไม่ได้จะวนมาให้ท่องบ่อยๆ</p>
+      <div class="game-wrap" id="flash-content"></div>
+    </div>
+
+    <div id="tab-fill" class="section">
+      <h1 class="page-title">เติมคำ</h1>
+      <p class="page-sub">อ่านคำแปลไทย แล้วพิมพ์คำภาษาอังกฤษ</p>
+      <div class="game-wrap" id="fill-content"></div>
+    </div>
+
+    <div id="tab-choice" class="section">
+      <h1 class="page-title">เลือกตอบ</h1>
+      <p class="page-sub">ดูคำอังกฤษแล้วเลือกคำแปลที่ถูกต้อง</p>
+      <div class="game-wrap" id="choice-content"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ─── STATE ─────────────────────────────────────────────────────────────────
+let words = JSON.parse(localStorage.getItem('vocabmind-words') || '[]');
+// คิวสำหรับการ์ดจำไม่ได้ชั่วคราวในการกดรอบปัจจุบัน
+let currentSessionQueue = [];
+let activeFlashWord = null;
+
+let flashFlipped = false;
+let fillOrder = [], fillIdx = 0, fillScore = 0;
+let choiceOrder = [], choiceIdx = 0, choiceScore = 0;
+
+function save() {
+  localStorage.setItem('vocabmind-words', JSON.stringify(words));
+  document.getElementById('count-badge').textContent = words.length;
+}
+
+// ฟังก์ชันเสียงอ่านข้อความภาษาอังกฤษ
+function speak(text, event) {
+  if (event) event.stopPropagation(); // กันไม่ให้ไปกระตุ้นการพลิกการ์ด
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel(); // ตัดเสียงเก่าที่กำลังพูดค้างไว้ก่อนหน้า
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.9; // ความเร็วพอดีๆ ฟังง่าย
+    window.speechSynthesis.speak(utterance);
+  } else {
+    alert("ขออภัย บราวเซอร์นี้ไม่รองรับระบบเสียงอ่าน");
+  }
+}
+
+// ─── NAV ───────────────────────────────────────────────────────────────────
+function showTab(name) {
+  ['add','list','flash','fill','choice'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t === name);
+    document.getElementById('nav-'+t).classList.toggle('active', t === name);
+  });
+  if (name === 'list') renderList();
+  if (name === 'flash') initFlash();
+  if (name === 'fill') initFill();
+  if (name === 'choice') initChoice();
+}
+
+// ─── ADD MANUAL ────────────────────────────────────────────────────────────
+function addWordManual() {
+  const enInput = document.getElementById('word-en');
+  const thInput = document.getElementById('word-th');
+  const posInput = document.getElementById('word-pos');
+  const exInput = document.getElementById('word-ex');
+  const exThInput = document.getElementById('word-ex-th');
+
+  const en = enInput.value.trim();
+  const th = thInput.value.trim();
+  const pos = posInput.value;
+  const example = exInput.value.trim() || "-";
+  const example_th = exThInput.value.trim() || "-";
+
+  if (!en || !th) {
+    alert('กรุณากรอกคำศัพท์ภาษาอังกฤษและคำแปลภาษาไทย');
+    return;
+  }
+
+  if (words.find(w => w.en.toLowerCase() === en.toLowerCase())) {
+    alert('คำศัพท์นี้มีอยู่แล้วในระบบ');
+    return;
+  }
+
+  // เพิ่มช่อง nextReview ยอมให้ทบทวนได้ทันที
+  words.unshift({ en, th, pos, example, example_th, nextReview: 0 });
+  save();
+
+  enInput.value = ''; thInput.value = ''; exInput.value = ''; exThInput.value = '';
+
+  const row = document.getElementById('loading-row');
+  row.style.display = 'flex';
+  setTimeout(() => { row.style.display = 'none'; }, 2000);
+}
+
+// ─── IMPORT FROM EXCEL (CSV) ───────────────────────────────────────────────
+function importCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const lines = text.split(/\r?\n/);
+    let addedCount = 0;
+    let skipCount = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const columns = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+      if (columns.length < 2) continue;
+
+      let en = columns[0].replace(/^"|"$/g, '').trim();
+      let th = columns[1] ? columns[1].replace(/^"|"$/g, '').trim() : '';
+      let example = columns[2] ? columns[2].replace(/^"|"$/g, '').trim() : '-';
+      
+      if (!en || !th) continue;
+
+      if (words.find(w => w.en.toLowerCase() === en.toLowerCase())) {
+        skipCount++;
+        continue;
+      }
+
+      words.push({
+        en: en,
+        th: th,
+        pos: 'word',
+        example: example,
+        example_th: '-',
+        nextReview: 0 // พร้อมทบทวนทันที
+      });
+      addedCount++;
+    }
+
+    save();
+    alert(`นำเข้าสำเร็จเรียบร้อย!\n- เพิ่มคำศัพท์ใหม่: ${addedCount} คำ\n- ข้ามคำที่ซ้ำในระบบ: ${skipCount} คำ`);
+    input.value = '';
+    showTab('list');
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// ─── EXPORT TO CSV ─────────────────────────────────────────────────────────
+function exportCSV() {
+  if (!words.length) { alert('ไม่มีคำศัพท์ให้ส่งออก'); return; }
+  let csvContent = "\uFEFF";
+  words.forEach(w => {
+    let en = w.en.includes(',') ? `"${w.en}"` : w.en;
+    let th = w.th.includes(',') ? `"${w.th}"` : w.th;
+    let ex = w.example.includes(',') ? `"${w.example}"` : w.example;
+    csvContent += `${en},${th},${ex}\n`;
+  });
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", "vocab_backup.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// ─── LIST ──────────────────────────────────────────────────────────────────
+function renderList() {
+  const el = document.getElementById('word-list');
+  const sub = document.getElementById('list-sub');
+  sub.textContent = words.length ? `${words.length} คำ` : 'ยังไม่มีคำศัพท์';
+  if (!words.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">◈</div><div class="empty-title">ยังไม่มีคำศัพท์</div><div class="empty-body">ลองเพิ่มคำศัพท์หรือนำเข้าไฟล์ในแท็บแรกดูนะคะ</div></div>`;
+    return;
+  }
+  el.innerHTML = words.map((w, i) => `
+    <div class="wcard">
+      <div class="wcard-head">
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+          <span class="wcard-en">${esc(w.en)}</span>
+          <button class="audio-btn" onclick="speak('${escAttr(w.en)}', event)">🔊 ฟัง</button>
+          <span class="wcard-pos">${esc(w.pos)}</span>
+        </div>
+        <button class="del-btn" onclick="deleteWord(${i})" aria-label="ลบ">✕</button>
+      </div>
+      <div class="wcard-th">${esc(w.th)}</div>
+      <div class="wcard-ex">
+        <span>"${esc(w.example)}"</span>
+        <div class="wcard-ex-th">${esc(w.example_th)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function deleteWord(i) {
+  if (!confirm('ลบคำนี้?')) return;
+  words.splice(i, 1);
+  save();
+  renderList();
+}
+
+// ─── SMART FLASHCARD (SPACED REPETITION SYSTEM) ───────────────────────────
+function initFlash() {
+  flashFlipped = false;
+  currentSessionQueue = [];
+  
+  const now = Date.now();
+  // คัดกรองคำศัพท์เฉพาะคำที่ "พร้อมรับการทบทวนแล้ว" (nextReview น้อยกว่าหรือเท่ากับปัจจุบัน)
+  let reviewableWords = words.filter(w => !w.nextReview || w.nextReview <= now);
+  
+  if (reviewableWords.length === 0 && words.length > 0) {
+    // หากมีคำศัพท์แต่ยังไม่ถึงเวลารีวิวเลย ให้แจ้งเตือนผู้ใช้ทราบ
+    const el = document.getElementById('flash-content');
+    el.innerHTML = `
+      <div class="result-box">
+        <div class="result-icon">🌤</div>
+        <div class="result-title" style="font-size:18px">ทบทวนคำศัพท์ชุดนี้เสร็จสิ้นแล้ว!</div>
+        <p class="result-sub" style="margin-top:8px; font-size:13px; color:var(--text-2);">
+          คำศัพท์ทั้งหมดถูกจัดตารางเว้นระยะแล้ว คำที่จำได้ดีจะกลับมาให้ทบทวนในอีก 1-2 วันข้างหน้าครับ
+        </p>
+        <button class="next-btn" onclick="resetAllReviewTimes()">🔓 บังคับปลดล็อกทุกคำเพื่อทบทวนทันที</button>
+      </div>`;
+    return;
+  }
+
+  // เอาคำที่พร้อมทบทวนมาสลับสับเปลี่ยนคิวสุ่ม
+  currentSessionQueue = shuffle([...reviewableWords]);
+  pickNextFlashWord();
+}
+
+// บังคับรีเซ็ตเวลาสำหรับคนที่อยากท่องซ้ำทันที
+function resetAllReviewTimes() {
+  words.forEach(w => w.nextReview = 0);
+  save();
+  initFlash();
+}
+
+function pickNextFlashWord() {
+  flashFlipped = false;
+  if (currentSessionQueue.length === 0) {
+    // จบรอบคิวปัจจุบันแล้ว ลองโหลดเช็กใหม่อีกรอบ
+    const now = Date.now();
+    let reviewableWords = words.filter(w => !w.nextReview || w.nextReview <= now);
+    if (reviewableWords.length === 0) {
+      initFlash();
+      return;
+    }
+    currentSessionQueue = shuffle([...reviewableWords]);
+  }
+  
+  activeFlashWord = currentSessionQueue.shift();
+  renderFlashCard();
+}
+
+function renderFlashCard() {
+  const el = document.getElementById('flash-content');
+  if (!words.length) { el.innerHTML = notEnough(1); return; }
+  if (!activeFlashWord) { initFlash(); return; }
+
+  const w = activeFlashWord;
+  // นับจำนวนรวมที่เหลือในคิวรอบนี้เพื่อบอกสถานะผู้เรียน
+  const remainingCount = currentSessionQueue.length + 1;
+
+  el.innerHTML = `
+    <div class="game-meta">
+      <span style="color:var(--accent-light)">เหลือคำในรอบนี้: <strong>${remainingCount}</strong> คำ</span>
+    </div>
+    <div class="flashcard-wrap ${flashFlipped ? 'flipped' : ''}" onclick="flipFlash()" id="fc-wrap">
+      <div class="flashcard-inner">
+        <div class="fc-side fc-front">
+          <div class="fc-label">English</div>
+          <div class="fc-word">
+            ${esc(w.en)}
+            <button class="audio-btn" style="font-size:20px;" onclick="speak('${escAttr(w.en)}', event)">🔊</button>
+          </div>
+          <div class="fc-pos">${esc(w.pos)}</div>
+          <div class="fc-tap">แตะตรงไหนก็ได้เพื่อดูเฉลยคำแปล</div>
+        </div>
+        <div class="fc-side fc-back">
+          <div class="fc-label">Thai</div>
+          <div class="fc-th">${esc(w.th)}</div>
+          <div class="fc-ex">"${esc(w.example)}"</div>
+          <div class="fc-tap" style="color:var(--accent-light);font-family:var(--font-th);font-style:normal;margin-top:6px">${esc(w.example_th)}</div>
+        </div>
+      </div>
+    </div>
+    
+    <div style="text-align:center; margin-bottom:8px; font-size:13px; color:var(--text-3)">ระดับความจำของคุณกับคำนี้:</div>
+    <div class="srs-row">
+      <button class="srs-btn srs-red" onclick="handleSRSAction('fail')">❌ จำไม่ได้<br><span style="font-size:10px;font-weight:400;">(ขึ้นบ่อยๆ รอบนี้)</span></button>
+      <button class="srs-btn srs-amber" onclick="handleSRSAction('hard')">⚡ ไม่ค่อยได้<br><span style="font-size:10px;font-weight:400;">(ทบทวนอีก 1 วัน)</span></button>
+      <button class="srs-btn srs-green" onclick="handleSRSAction('easy')">✓ จำได้แล้ว<br><span style="font-size:10px;font-weight:400;">(ทบทวนอีก 2 วัน)</span></button>
+    </div>
+  `;
+}
+
+function flipFlash() { 
+  flashFlipped = !flashFlipped; 
+  document.getElementById('fc-wrap').classList.toggle('flipped', flashFlipped); 
+}
+
+function handleSRSAction(rating) {
+  const now = Date.now();
+  // หาตัวคำศัพท์ในอาร์เรย์หลักเพื่ออัปเดตสถานะข้ามเครื่อง/เซฟลงถาวร
+  let masterWord = words.find(w => w.en.toLowerCase() === activeFlashWord.en.toLowerCase());
+  
+  if (!masterWord) return;
+
+  if (rating === 'fail') {
+    // จำไม่ได้: จัดคิวใส่ไว้ท้ายแถว เพื่อสุ่มขึ้นมาใหม่ในรอบปัจจุบันเรื่อยๆ จนกว่าผู้ใช้จะกดเป็น Easy
+    masterWord.nextReview = 0;
+    currentSessionQueue.push(activeFlashWord);
+  } else if (rating === 'hard') {
+    // จำไม่ค่อยได้: อีก 1 วันค่อยมาทบทวนใหม่ (1 วัน = 24 * 60 * 60 * 1000 มิลลิวินาที)
+    masterWord.nextReview = now + (24 * 60 * 60 * 1000);
+  } else if (rating === 'easy') {
+    // จำได้แล้ว: อีก 2 วันค่อยกลับมาใหม่ (2 วัน = 48 * 60 * 60 * 1000 มิลลิวินาที)
+    masterWord.nextReview = now + (48 * 60 * 60 * 1000);
+  }
+
+  save(); // บันทึกข้อมูลสถานะความจำถาวรลงในเครื่องทันที
+  pickNextFlashWord();
+}
+
+// ─── FILL IN ───────────────────────────────────────────────────────────────
+function initFill() {
+  if (words.length < 2) { document.getElementById('fill-content').innerHTML = notEnough(2); return; }
+  fillOrder = shuffle([...Array(words.length).keys()]);
+  fillIdx = 0; fillScore = 0;
+  renderFill();
+}
+function renderFill() {
+  const el = document.getElementById('fill-content');
+  if (fillIdx >= fillOrder.length) { el.innerHTML = resultHTML(fillScore, fillOrder.length, 'initFill()'); return; }
+  const w = words[fillOrder[fillIdx]];
+  const pct = Math.round((fillIdx / fillOrder.length) * 100);
+  const hint = w.en[0] + ' _ '.repeat(w.en.length - 1);
+  el.innerHTML = `
+    <div class="progress-bar-outer"><div class="progress-bar-inner" style="width:${pct}%"></div></div>
+    <div class="game-meta"><span>${fillIdx + 1} / ${fillOrder.length}</span><span class="game-score">คะแนน: <span>${fillScore}</span></span></div>
+    <div class="game-card">
+      <div class="game-label">คำแปลภาษาไทย</div>
+      <div class="game-word" style="font-family:var(--font-th);font-size:26px">${esc(w.th)}</div>
+      <div class="game-pos-badge">${esc(w.pos)}</div>
+      <div class="hint-pill">${w.en[0]} · ${w.en.length} ตัวอักษร</div>
+      <input class="fill-input-game" id="fill-ans" placeholder="${hint}" maxlength="60" autocomplete="off" />
+      <div id="fill-fb"></div>
+      <button class="next-btn" onclick="checkFill()">ตรวจคำตอบ</button>
+    </div>`;
+  const inp = document.getElementById('fill-ans'); inp.focus();
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') checkFill(); });
+}
+function checkFill() {
+  const inp = document.getElementById('fill-ans'); if (!inp || inp.disabled) return;
+  const val = inp.value.trim().toLowerCase();
+  const w = words[fillOrder[fillIdx]];
+  const ok = val === w.en.toLowerCase();
+  if (ok) fillScore++;
+  inp.classList.add(ok ? 'correct' : 'wrong'); inp.disabled = true;
+  document.getElementById('fill-fb').innerHTML = `<div class="feedback ${ok ? 'ok' : 'no'}">${ok ? '✓ ถูกต้อง!' : `✕ คำตอบที่ถูกคือ "${esc(w.en)}"`}</div>`;
+  const btn = document.querySelector('#fill-content .next-btn');
+  btn.textContent = fillIdx + 1 >= fillOrder.length ? 'ดูผลคะแนน' : 'คำถามถัดไป →';
+  btn.onclick = () => { fillIdx++; renderFill(); };
+}
+
+// ─── CHOICE ────────────────────────────────────────────────────────────────
+function initChoice() {
+  if (words.length < 4) { document.getElementById('choice-content').innerHTML = notEnough(4); return; }
+  choiceOrder = shuffle([...Array(words.length).keys()]);
+  choiceIdx = 0; choiceScore = 0;
+  renderChoice();
+}
+function renderChoice() {
+  const el = document.getElementById('choice-content');
+  if (choiceIdx >= choiceOrder.length) { el.innerHTML = resultHTML(choiceScore, choiceOrder.length, 'initChoice()'); return; }
+  const w = words[choiceOrder[choiceIdx]];
+  const others = words.filter((_, i) => i !== choiceOrder[choiceIdx]);
+  const wrongs = shuffle(others).slice(0, 3);
+  const choices = shuffle([...wrongs.map(x => x.th), w.th]);
+  const pct = Math.round((choiceIdx / choiceOrder.length) * 100);
+  el.innerHTML = `
+    <div class="progress-bar-outer"><div class="progress-bar-inner" style="width:${pct}%"></div></div>
+    <div class="game-meta"><span>${choiceIdx + 1} / ${choiceOrder.length}</span><span class="game-score">คะแนน: <span>${choiceScore}</span></span></div>
+    <div class="game-card">
+      <div class="game-label">คำศัพท์ภาษาอังกฤษ</div>
+      <div class="game-word">${esc(w.en)}</div>
+      <div class="game-pos-badge">${esc(w.pos)}</div>
+      <div class="game-example">"${esc(w.example)}"</div>
+      <div class="choices">${choices.map(c => `<button class="choice-btn" onclick="checkChoice(this,'${escAttr(c)}','${escAttr(w.th)}')">${esc(c)}</button>`).join('')}</div>
+    </div>`;
+}
+function checkChoice(btn, chosen, correct) {
+  document.querySelectorAll('#choice-content .choice-btn').forEach(b => {
+    b.disabled = true;
+    if (b.textContent.trim() === correct) b.classList.add('correct');
+    else if (b === btn && chosen !== correct) b.classList.add('wrong');
+  });
+  if (chosen === correct) choiceScore++;
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'next-btn'; nextBtn.style.marginTop = '1rem';
+  nextBtn.textContent = choiceIdx + 1 >= choiceOrder.length ? 'ดูผลคะแนน' : 'คำถามถัดไป →';
+  nextBtn.onclick = () => { choiceIdx++; renderChoice(); };
+  document.querySelector('#choice-content .game-card').appendChild(nextBtn);
+}
+
+// ─── HELPERS ───────────────────────────────────────────────────────────────
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s) { return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+function notEnough(n) { return `<div class="empty"><div class="empty-icon">⟁</div><div class="empty-title">ต้องการคำศัพท์อย่างน้อย ${n} คำ</div><div class="empty-body">ไปเพิ่มคำศัพท์ก่อนนะ</div></div>`; }
+function resultHTML(score, total, fn) {
+  const pct = Math.round((score / total) * 100);
+  return `<div class="result-box">
+    <div class="result-icon">${pct >= 80 ? '🎉' : pct >= 50 ? '👍' : '📚'}</div>
+    <div class="result-title">${pct >= 80 ? 'เยี่ยมมาก!' : pct >= 50 ? 'ทำได้ดี!' : 'ฝึกอีกนิดนะ!'}</div>
+    <div class="result-score">${score}/${total}</div>
+    <div class="result-sub">${pct}% ถูกต้อง</div>
+    <button class="next-btn" onclick="${fn}">เล่นใหม่</button>
+  </div>`;
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+document.getElementById('count-badge').textContent = words.length;
+</script>
+</body>
+</html>
