@@ -271,14 +271,14 @@
     letter-spacing: 0.5px;
   }
   .fill-input-game:focus { border-color: var(--accent); }
-  .fill-input-game.correct { border-color: var(--green); color: var(--green); background: rgba(62,207,142,0.05); }
-  .fill-input-game.wrong { border-color: var(--red); color: var(--red); background: rgba(242,109,109,0.05); }
+  .fill-input-game.correct { border-color: var(--green); color: var(--green); }
+  .fill-input-game.wrong { border-color: var(--red); color: var(--red); }
 
   .hint-pill { display: inline-block; font-family: var(--font-en); font-size: 13px; background: var(--surface-2); color: var(--text-2); padding: 4px 14px; border-radius: 20px; margin-bottom: 14px; }
 
-  .feedback { font-size: 14px; font-weight: 500; padding: 12px 14px; border-radius: var(--radius); margin-bottom: 14px; text-align: left; line-height: 1.5; }
-  .feedback.ok { background: var(--green-bg); color: var(--green); border: 1px solid rgba(62,207,142,0.2); }
-  .feedback.no { background: var(--red-bg); color: var(--red); border: 1px solid rgba(242,109,109,0.2); }
+  .feedback { size: 14px; font-weight: 500; padding: 10px 14px; border-radius: var(--radius); margin-bottom: 14px; text-align: left; }
+  .feedback.ok { background: var(--green-bg); color: var(--green); }
+  .feedback.no { background: var(--red-bg); color: var(--red); }
 
   /* BUTTON GROUPS FOR GAMES */
   .game-btn-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 4px; }
@@ -675,16 +675,18 @@ function handleSRSAction(rating) {
 
 // ─── ADVANCED FILL IN (WITH SKIP, REVEAL, AND SRS INTEGRATION) ────────────
 function cleanCompareWord(str) {
+  // ฟังก์ชันฉลาดสำหรับเคลียร์คำตอบ: ตัดสิ่งที่เป็นวงเล็บออก และตัดช่องว่างทั้งหมด
   return String(str || '')
-    .replace(/\([^)]*\)/g, '') 
-    .replace(/\s+/g, '')       
-    .toLowerCase();            
+    .replace(/\([^)]*\)/g, '') // เอาสิ่งในวงเล็บทั้งหมดออก เช่น (n), (v), (adj)
+    .replace(/\s+/g, '')       // เอาช่องว่างหรือเว้นวรรคออกทั้งหมด
+    .toLowerCase();            // ทำเป็นตัวพิมพ์เล็กทั้งหมด
 }
 
 function initFill() {
   if (words.length < 1) { document.getElementById('fill-content').innerHTML = notEnough(1); return; }
   
   const now = Date.now();
+  // คัดเอาเฉพาะคำศัพท์ที่ถึงเวลาต้องทบทวนเติมคำมาเล่น
   let reviewable = words.filter(w => !w.nextReview || w.nextReview <= now);
   
   if (reviewable.length === 0) {
@@ -770,8 +772,9 @@ function submitFillAnswer() {
   if (isCorrect) {
     fillScore++;
     inp.classList.add('correct');
-    fbArea.innerHTML = `<div class="feedback ok">✓ ถูกต้องยอดเยี่ยม! คำตอบคือ "<strong>${esc(activeFillWord.en)}</strong>"<br><span style="font-size:12px;opacity:0.8;">(คำนี้ถูกเก็บเข้าคลังเว้นระยะเปิดทบทวนอีก 2 วันข้างหน้า)</span></div>`;
+    fbArea.innerHTML = `<div class="feedback ok">✓ ยอดเยี่ยมถูกต้อง! (คำนี้ถูกเก็บเข้าคลังเว้นระยะเปิดทบทวนอีก 2 วันข้างหน้า)</div>`;
     
+    // ตั้งค่าความจำเว้นระยะไปอีก 2 วันเหมือนแฟลชการ์ดสำหรับระบบพิมพ์ถูกเอง
     let masterWord = words.find(w => w.en.toLowerCase() === activeFillWord.en.toLowerCase());
     if (masterWord) {
       masterWord.nextReview = Date.now() + (48 * 60 * 60 * 1000);
@@ -779,10 +782,12 @@ function submitFillAnswer() {
     }
   } else {
     inp.classList.add('wrong');
-    fbArea.innerHTML = `<div class="feedback no">✕ ยังไม่ถูกต้อง! คำตอบที่ถูกคือ "<strong>${esc(activeFillWord.en)}</strong>"<br><span style="font-size:12px;opacity:0.8;">(คำนี้จะถูกวนกลับมาถามซ้ำใหม่ในท้ายเซสชัน)</span></div>`;
+    fbArea.innerHTML = `<div class="feedback no">✕ ยังไม่ถูกต้อง คำตอบที่ถูกต้องคือ: "<strong>${esc(activeFillWord.en)}</strong>" (คำนี้จะถูกวนกลับมาถามซ้ำใหม่ในท้ายเซสชัน)</div>`;
+    // หากพิมพ์ผิด จะเอาคำนี้ไปใส่ต่อท้ายคิวเพื่อวนกลับมาให้พิมพ์ใหม่จนกว่าจะผ่าน
     fillSessionQueue.push(activeFillWord);
   }
 
+  // เปลี่ยนปุ่มเป็นให้ไปต่อ
   btnGroup.style.display = 'block';
   btnGroup.innerHTML = `<button class="next-btn" id="fill-continue-btn">คำถัดไป →</button>`;
   document.getElementById('fill-continue-btn').focus();
@@ -802,17 +807,18 @@ function revealFillAnswer() {
   fillSessionQueue.push(activeFillWord);
 
   btnGroup.style.display = 'block';
-  btnGroup.innerHTML = `<button class="next-btn" id="fill-continue-btn" onclick="pickNextFillWord()">คำถัดไป →</button>`;
-  document.getElementById('fill-continue-btn').focus();
+  btnGroup.innerHTML = `<button class="next-btn" onclick="pickNextFillWord()">คำถัดไป →</button>`;
 }
 
 function skipFillWord() {
+  // กดข้ามจะนับว่ายังไม่คล่องและนำคำนั้นไปใส่ท้ายคิวเพื่อวนกลับมาทดสอบใหม่
   fillSessionQueue.push(activeFillWord);
   pickNextFillWord();
 }
 
 function renderFillResult() {
   const el = document.getElementById('fill-content');
+  const pct = Math.round((fillScore / fillTotalCount) * 100);
   el.innerHTML = `
     <div class="result-box">
       <div class="result-icon">🎉</div>
